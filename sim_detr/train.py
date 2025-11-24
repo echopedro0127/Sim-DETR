@@ -37,6 +37,8 @@ def set_seed(seed, use_cuda=True):
     torch.manual_seed(seed)
     if use_cuda:
         torch.cuda.manual_seed_all(seed)
+        cudnn.benchmark = False
+        cudnn.deterministic = True
 
 
 def train_epoch(model, criterion, train_loader, optimizer, opt, epoch_i, tb_writer):
@@ -60,11 +62,26 @@ def train_epoch(model, criterion, train_loader, optimizer, opt, epoch_i, tb_writ
             model_inputs, targets = prepare_batch_inputs(batch[1], opt.device, non_blocking=opt.pin_memory)
         else:
             model_inputs, targets = prepare_batch_inputs_audio(batch[1], opt.device, non_blocking=opt.pin_memory)
+        B, L, _ = model_inputs['src_vid'].shape
+        mask_labels = []
+        for b_idx in range(B):
+            relevant_windows = batch[0][b_idx]['relevant_windows']
+            num_windows = len(relevant_windows)
+            masks = torch.zeros(num_windows, L).to(opt.device) if num_windows < opt.max_windows else torch.zeros(opt.max_windows, L).to(opt.device)
+            for w_idx, w in enumerate(relevant_windows):
+                if w_idx >= opt.max_windows:
+                    break
+                masks[w_idx, w[0]//2:w[1]//2] = 1
+            mask_labels.append(masks)
+        targets['mask_labels'] = mask_labels
+
         time_meters["prepare_inputs_time"].update(time.time() - timer_start)
         timer_start = time.time()
         outputs = model(**model_inputs)
         loss_dict = criterion(outputs, targets)
+
         weight_dict = criterion.weight_dict
+
         losses = sum(loss_dict[k] * weight_dict[k] for k in loss_dict.keys() if k in weight_dict)
         
 
@@ -101,6 +118,7 @@ def train_epoch(model, criterion, train_loader, optimizer, opt, epoch_i, tb_writ
 
     # print/add logs
     tb_writer.add_scalar("Train/lr", float(optimizer.param_groups[0]["lr"]), epoch_i+1)
+    logger.info("Epoch {} Losses: {}".format(epoch_i+1, {k: v.avg for k, v in loss_meters.items()}))
     for k, v in loss_meters.items():
         tb_writer.add_scalar("Train/{}".format(k), v.avg, epoch_i+1)
 
@@ -110,11 +128,6 @@ def train_epoch(model, criterion, train_loader, optimizer, opt, epoch_i, tb_writ
         loss_str=" ".join(["{} {:.4f}".format(k, v.avg) for k, v in loss_meters.items()]))
     with open(opt.train_log_filepath, "a") as f:
         f.write(to_write)
-
-    logger.info("Epoch time stats:")
-    for name, meter in time_meters.items():
-        d = {k: f"{getattr(meter, k):.4f}" for k in ["max", "min", "avg"]}
-        logger.info(f"{name} ==> {d}")
 
 
 def train(model, criterion, optimizer, lr_scheduler, train_dataset, val_dataset, opt):
@@ -340,15 +353,8 @@ def train_hl(model, criterion, optimizer, lr_scheduler, train_dataset, val_datas
 
 
 
-def start_training():
+def start_training(opt):
     logger.info("Setup config, data and model...")
-    opt = BaseOptions().parse()
-    set_seed(opt.seed)
-    if opt.debug:  # keep the model run deterministically
-        # 'cudnn.benchmark = True' enabled auto finding the best algorithm for a specific input/net config.
-        # Enable this only when input size is fixed.
-        cudnn.benchmark = False
-        cudnn.deterministic = True
     if opt.a_feat_dir is None:
         dataset_config = dict(
             dset_name=opt.dset_name,
@@ -417,11 +423,14 @@ def start_training():
     else:
         train(model, criterion, optimizer, lr_scheduler, train_dataset, eval_dataset, opt)
     
-    return opt.ckpt_filepath.replace(".ckpt", "_best.ckpt"), opt.eval_split_name, opt.eval_path, opt.debug, opt
+    return opt.ckpt_filepath.replace(".ckpt", "_best.ckpt"), opt.eval_split_name, opt.eval_path, opt.debug
 
 
 if __name__ == '__main__':
-    best_ckpt_path, eval_split_name, eval_path, debug, opt = start_training()
+    opt = BaseOptions().parse()
+    torch.cuda.set_device(opt.gpu_id)
+    set_seed(opt.seed)
+    best_ckpt_path, eval_split_name, eval_path, debug = start_training(opt)
     if not debug:
         input_args = ["--resume", best_ckpt_path,
                       "--eval_split_name", eval_split_name,

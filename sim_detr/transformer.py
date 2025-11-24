@@ -57,7 +57,7 @@ def gen_sineembed_for_position(pos_tensor):
 
 class Transformer(nn.Module):
 
-    def __init__(self, d_model=512, nhead=8, num_queries=2, num_encoder_layers=6,
+    def __init__(self, d_model=512, nhead=8, num_queries=10, num_encoder_layers=6,
                  num_decoder_layers=6, dim_feedforward=2048, dropout=0.1,
                  activation="relu", normalize_before=False,
                  return_intermediate_dec=False, query_dim=2,
@@ -72,7 +72,7 @@ class Transformer(nn.Module):
         t2v_encoder_layer = T2V_TransformerEncoderLayer_no_global(d_model, nhead, dim_feedforward,
                                                 dropout, activation, normalize_before)
         encoder_norm = nn.LayerNorm(d_model) if normalize_before else None
-        self.t2v_encoder = TransformerEncoder(t2v_encoder_layer, num_encoder_layers, encoder_norm)
+        self.t2v_encoder = TransformerEncoder(t2v_encoder_layer, num_t2v_layers, encoder_norm)
 
 
         # TransformerEncoderLayerThin
@@ -90,7 +90,6 @@ class Transformer(nn.Module):
                                           d_model=d_model, query_dim=query_dim, keep_query_pos=keep_query_pos, query_scale_type=query_scale_type,
                                           modulate_t_attn=modulate_t_attn,
                                           bbox_embed_diff_each_layer=bbox_embed_diff_each_layer)
-
         self._reset_parameters()
 
         
@@ -108,7 +107,7 @@ class Transformer(nn.Module):
                 nn.init.xavier_uniform_(p)
 
     # for tvsum, add video_length in argument
-    def forward(self, src, mask, query_embed, pos_embed, saliency_proj1, video_length=None, sent_feat=None): # 和主函数权重共享
+    def forward(self, src, mask, query_embed, pos_embed, saliency_proj1, video_length=None, sent_feat=None):
         """
         Args:
             src: (batch_size, L, d)
@@ -193,8 +192,7 @@ class TransformerEncoder(nn.Module):
             return torch.stack(intermediate)
 
         return output
-
-
+    
 class TransformerDecoder(nn.Module):
 
     def __init__(self, decoder_layer, num_layers, norm=None, return_intermediate=False,
@@ -248,6 +246,10 @@ class TransformerDecoder(nn.Module):
             for layer_id in range(num_layers - 1):
                 self.layers[layer_id + 1].ca_qpos_proj = None
 
+        self.span_embed = None
+        self.class_embed = None
+        self.iou_head = None
+
     def forward(self, tgt, memory,
                 tgt_mask: Optional[Tensor] = None,
                 memory_mask: Optional[Tensor] = None,
@@ -257,6 +259,7 @@ class TransformerDecoder(nn.Module):
                 refpoints_unsigmoid: Optional[Tensor] = None,  # num_queries, bs, 2
                 ):
         output = tgt
+        nq, bs, _ = output.size()
 
         intermediate = []
         reference_points = refpoints_unsigmoid.sigmoid()
@@ -268,9 +271,7 @@ class TransformerDecoder(nn.Module):
             obj_center = reference_points[..., :self.query_dim]
             # get sine embedding for the query vector
             query_sine_embed = gen_sineembed_for_position(obj_center)
-            # print('line230', query_sine_embed.shape)
             query_pos = self.ref_point_head(query_sine_embed)
-            # print('line232',query_sine_embed.shape)
             # For the first decoder layer, we do not apply transformation over p_s
             if self.query_scale_type != 'fix_elewise':
                 if layer_id == 0:
@@ -281,17 +282,40 @@ class TransformerDecoder(nn.Module):
                 pos_transformation = self.query_scale.weight[layer_id]
 
             # apply transformation
-            # print(query_sine_embed.shape) # 10 32 512
             query_sine_embed = query_sine_embed * pos_transformation
 
             # modulated HW attentions
             if self.modulate_t_attn:
                 reft_cond = self.ref_anchor_head(output).sigmoid()  # nq, bs, 1
-                # print(reft_cond.shape, reft_cond[..., 0].shape) # 10 32 1, 10 32
-                # print(obj_center.shape, obj_center[..., 1].shape) # 10 32 2, 10 32
-                # print(query_sine_embed.shape) # 10 32 256
-
                 query_sine_embed *= (reft_cond[..., 0] / obj_center[..., 1]).unsqueeze(-1)
+
+            if layer_id == 0:
+                r = torch.zeros(nq, nq, bs, device=output.device)
+            else:
+                cls_score = self.class_embed(output)
+                cls_score = F.softmax(cls_score, dim=-1)[..., 0] # nq, bs
+                cls_score_row = cls_score.unsqueeze(1).repeat(1, nq, 1)  # nq, nq, bs
+                cls_score_col = cls_score.unsqueeze(0).repeat(nq, 1, 1)  # nq, nq, bs
+
+                iou_score = self.iou_head(output)[..., 0].sigmoid()  # nq, bs
+                iou_score_row = iou_score.unsqueeze(1).repeat(1, nq, 1)  # nq, nq, bs
+                iou_score_col = iou_score.unsqueeze(0).repeat(nq, 1, 1)  # nq, nq, bs
+
+                score_row = cls_score_row * iou_score_row
+                score_col = cls_score_col * iou_score_col
+                r_rank = (score_row >= score_col).float() * 2 - 1  # nq, nq, bs
+
+                spans = self.span_embed(output) # nq, bs, 2
+                spans += inverse_sigmoid(reference_points)
+                spans = spans.sigmoid()
+                spans_st = spans[..., 0] + 0.5 * spans[..., 1]
+                spans_ed = spans[..., 0] - 0.5 * spans[..., 1]
+                spans = torch.stack([spans_st, spans_ed], dim=-1)  # nq, bs, 2
+                spans_row = spans.unsqueeze(1).repeat(1, nq, 1, 1)
+                spans_col = spans.unsqueeze(0).repeat(nq, 1, 1, 1)
+                r_spt = 1 - torch.mean((spans_row - spans_col) ** 2, dim=-1)  # nq, nq, bs
+
+                r = r_rank * r_spt
 
 
             output = layer(output, memory, tgt_mask=tgt_mask,
@@ -299,7 +323,8 @@ class TransformerDecoder(nn.Module):
                            tgt_key_padding_mask=tgt_key_padding_mask,
                            memory_key_padding_mask=memory_key_padding_mask,
                            pos=pos, query_pos=query_pos, query_sine_embed=query_sine_embed,
-                           is_first=(layer_id == 0))
+                           is_first=(layer_id == 0),
+                           competition_matrix=r)
 
             # iter update
             if self.bbox_embed is not None:
@@ -522,20 +547,11 @@ class T2V_TransformerEncoderLayer(nn.Module):
         
         assert video_length is not None
         
-        # print('before src shape :', src.shape)
         pos_src = self.with_pos_embed(src, pos)
         global_token, q, k, v = src[0].unsqueeze(0), pos_src[1:video_length + 1], pos_src[video_length + 1:], src[video_length + 1:]
 
-        # print(src_key_padding_mask.shape) # torch.Size([32, 102])
-        # print(src_key_padding_mask[:, 1:76].permute(1,0).shape) # torch.Size([75, 32])
-        # print(src_key_padding_mask[:, 76:].shape) # torch.Size([32, 26])
-
         qmask, kmask = src_key_padding_mask[:, 1:video_length + 1].unsqueeze(2), src_key_padding_mask[:, video_length + 1:].unsqueeze(1)
         attn_mask = torch.matmul(qmask.float(), kmask.float()).bool().repeat(self.nhead, 1, 1)
-        # print(attn_mask.shape)
-        # print(attn_mask[0][0])
-        # print(q.shape) 75 32 256
-        # print(k.shape) 26 32 256
 
 
         src2 = self.self_attn(q, k, value=v, attn_mask=attn_mask,
@@ -547,7 +563,6 @@ class T2V_TransformerEncoderLayer(nn.Module):
         src2 = self.norm2(src2)
         src2 = torch.cat([global_token, src2], dim=0)
         src = torch.cat([src2, src[video_length + 1:]])
-        # print('after src shape :',src.shape)
         return src
 
     def forward_pre(self, src,
@@ -687,6 +702,14 @@ class TransformerDecoderLayer(nn.Module):
         self.normalize_before = normalize_before
         self.keep_query_pos = keep_query_pos
 
+
+        mlp_hd = 16
+        self.sa_competition_mlp = nn.Sequential(
+            nn.Linear(1, mlp_hd),
+            nn.ReLU(),
+            nn.Linear(mlp_hd, 1)
+        )
+
     def with_pos_embed(self, tensor, pos: Optional[Tensor]):
         return tensor if pos is None else tensor + pos
 
@@ -698,7 +721,8 @@ class TransformerDecoderLayer(nn.Module):
                 pos: Optional[Tensor] = None,
                 query_pos: Optional[Tensor] = None,
                 query_sine_embed=None,
-                is_first=False):
+                is_first=False,
+                competition_matrix=None):
 
         # ========== Begin of Self-Attention =============
         if not self.rm_self_attn_decoder:
@@ -716,8 +740,15 @@ class TransformerDecoderLayer(nn.Module):
             q = q_content + q_pos
             k = k_content + k_pos
 
+            if competition_matrix is not None:
+                sa_decay = torch.sigmoid(self.sa_competition_mlp(competition_matrix.unsqueeze(-1))).squeeze(-1) # nq, nq, bs
+                sa_decay = sa_decay.permute(2, 0, 1).repeat(self.nhead, 1, 1)
+            else:
+                sa_decay = None
+
             tgt2 = self.self_attn(q, k, value=v, attn_mask=tgt_mask,
-                                  key_padding_mask=tgt_key_padding_mask)[0]
+                                  key_padding_mask=tgt_key_padding_mask,
+                                  sa_decay=sa_decay)[0]
             # ========== End of Self-Attention =============
 
             tgt = tgt + self.dropout1(tgt2)

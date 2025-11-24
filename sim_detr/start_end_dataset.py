@@ -143,25 +143,26 @@ class StartEndDataset(Dataset):
                 model_inputs["saliency_pos_labels"], model_inputs["saliency_neg_labels"], model_inputs["saliency_all_labels"] = \
                             self.get_saliency_labels_all_tvsum(meta_label, ctx_l)
             else:
+                if 'relevant_clip_ids' in meta:
+                    pos_idx = torch.tensor(meta['relevant_clip_ids'])
+                    mask = torch.zeros_like(torch.ones(ctx_l))
 
-                pos_idx = torch.tensor(meta['relevant_clip_ids'])
-                mask = torch.zeros_like(torch.ones(ctx_l))
+                    if pos_idx.max() >= len(mask):
+                        new_mask = torch.zeros_like(torch.ones(pos_idx.max()+1 ))
+                        new_mask[pos_idx] = 1
+                        new_mask[:len(mask)] = mask
+                        mask = new_mask
+                    else:
+                        mask[pos_idx] = 1
 
-                if pos_idx.max() >= len(mask):
-                    new_mask = torch.zeros_like(torch.ones(pos_idx.max()+1 ))
-                    new_mask[pos_idx] = 1
-                    new_mask[:len(mask)] = mask
-                    mask = new_mask
-                else:
-                    mask[pos_idx] = 1
-
-                model_inputs["pos_mask"] = mask 
+                    model_inputs["pos_mask"] = mask 
 
 
                 model_inputs["span_labels"] = self.get_span_labels(meta["relevant_windows"], ctx_l)  # (#windows, 2)
                 if "subs_train" not in self.data_path:
-                    model_inputs["saliency_pos_labels"], model_inputs["saliency_neg_labels"], model_inputs["saliency_all_labels"] = \
-                        self.get_saliency_labels_all(meta["relevant_clip_ids"], meta["saliency_scores"], ctx_l)
+                    if "relevant_clip_ids" in meta:
+                        model_inputs["saliency_pos_labels"], model_inputs["saliency_neg_labels"], model_inputs["saliency_all_labels"] = \
+                            self.get_saliency_labels_all(meta["relevant_clip_ids"], meta["saliency_scores"], ctx_l)
                 else:
                     model_inputs["saliency_pos_labels"], model_inputs["saliency_neg_labels"], model_inputs["saliency_all_labels"] = \
                         self.get_saliency_labels_sub_as_query(meta["relevant_windows"][0], ctx_l)  # only one gt
@@ -301,7 +302,7 @@ class StartEndDataset(Dataset):
         returns Tensor of shape (#windows, 2), each row is [center, width] normalized by video length
         """
         if len(windows) > self.max_windows:
-            random.shuffle(windows)
+            # random.shuffle(windows)
             windows = windows[:self.max_windows]
         if self.span_loss_type == "l1":
             windows = torch.Tensor(windows) / (ctx_l * self.clip_len)  # normalized windows in xx
@@ -323,14 +324,14 @@ class StartEndDataset(Dataset):
             q_feat_path = join(self.q_feat_dir, f"{qid}.npy")
             q_feat = np.load(q_feat_path).astype(np.float32)
             if self.q_feat_type == "last_hidden_state":
-                q_feat = q_feat[:self.max_q_l]
+                q_feat = q_feat[:self.max_q_l] # L, K, D
             if self.normalize_t:
                 q_feat = l2_normalize_np_array(q_feat)
             if self.txt_drop_ratio > 0:
                 q_feat = self.random_drop_rows(q_feat)
             l = len(q_feat)
             q_feat = q_feat.reshape(l, -1)
-        return torch.from_numpy(q_feat)  # (D, ) or (Lq, D)
+        return torch.from_numpy(q_feat)
 
     def random_drop_rows(self, embeddings):
         """randomly mask num_drop rows in embeddings to be zero.

@@ -42,12 +42,12 @@ def post_processing_mr_nms(mr_res, nms_thd, max_before_nms, max_after_nms):
 
 
 def eval_epoch_post_processing(submission, opt, gt_data, save_submission_filename):
-    # IOU_THDS = (0.5, 0.7)
+
     logger.info("Saving/Evaluating before nms results")
     submission_path = os.path.join(opt.results_dir, save_submission_filename)
     save_jsonl(submission, submission_path)
 
-    if opt.eval_split_name in ["val"]:  # since test_public has no GT
+    if not opt.eval_split_name == 'test':  # since test_public has no GT
         metrics = eval_submission(
             submission, gt_data,
             verbose=opt.debug, match_number=not opt.debug
@@ -69,7 +69,7 @@ def eval_epoch_post_processing(submission, opt, gt_data, save_submission_filenam
         logger.info("Saving/Evaluating nms results")
         submission_nms_path = submission_path.replace(".jsonl", "_nms_thd_{}.jsonl".format(opt.nms_thd))
         save_jsonl(submission_after_nms, submission_nms_path)
-        if opt.eval_split_name == "val":
+        if not opt.eval_split_name == 'test':
             metrics_nms = eval_submission(
                 submission_after_nms, gt_data,
                 verbose=opt.debug, match_number=not opt.debug
@@ -174,6 +174,7 @@ def compute_hl_results(model, eval_loader, opt, epoch_i=None, criterion=None, tb
 @torch.no_grad()
 def compute_mr_results(model, eval_loader, opt, epoch_i=None, criterion=None, tb_writer=None):
     model.eval()
+    criterion = None
     if criterion:
         assert eval_loader.dataset.load_labels
         criterion.eval()
@@ -190,8 +191,11 @@ def compute_mr_results(model, eval_loader, opt, epoch_i=None, criterion=None, tb
             model_inputs, targets = prepare_batch_inputs_audio(batch[1], opt.device, non_blocking=opt.pin_memory)
         outputs = model(**model_inputs)
         prob = F.softmax(outputs["pred_logits"], -1)  # (batch_size, #queries, #classes=2)
+        iou_scores = outputs["iou_scores"][..., 0].sigmoid()  # (batch_size, #queries)
+        # prob = outputs["pred_logits"]  # (batch_size, #queries, #classes=2)
         if opt.span_loss_type == "l1":
             scores = prob[..., 0]  # * (batch_size, #queries)  foreground label is 0, we directly take it
+            scores = scores * iou_scores
             pred_spans = outputs["pred_spans"]  # (bsz, #queries, 2)
             _saliency_scores = outputs["saliency_scores"].half()  # (bsz, L)
             saliency_scores = []
@@ -221,7 +225,7 @@ def compute_mr_results(model, eval_loader, opt, epoch_i=None, criterion=None, tb
                 query=meta["query"],
                 vid=meta["vid"],
                 pred_relevant_windows=cur_ranked_preds,
-                pred_saliency_scores=saliency_scores[idx]
+                pred_saliency_scores=saliency_scores[idx],
             )
             mr_res.append(cur_query_pred)
 
@@ -352,7 +356,7 @@ def start_inference(train_opt=None, split=None, splitfile=None):
     cudnn.deterministic = False
 
     assert opt.eval_path is not None
-    if opt.eval_split_name == 'val':
+    if opt.eval_split_name != 'test':
         loadlabel = True
     else:
         loadlabel = False
@@ -411,7 +415,7 @@ def start_inference(train_opt=None, split=None, splitfile=None):
     with torch.no_grad():
         metrics_no_nms, metrics_nms, eval_loss_meters, latest_file_paths = \
             eval_epoch(model, eval_dataset, opt, save_submission_filename, criterion=criterion)
-    if opt.eval_split_name == 'val':
+    if not opt.eval_split_name == 'test':
         logger.info("metrics_no_nms {}".format(pprint.pformat(metrics_no_nms["brief"], indent=4)))
     if metrics_nms is not None:
         logger.info("metrics_nms {}".format(pprint.pformat(metrics_nms["brief"], indent=4)))

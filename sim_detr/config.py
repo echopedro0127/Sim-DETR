@@ -37,6 +37,7 @@ class BaseOptions(object):
         parser.add_argument("--exp_id", type=str, default=None, help="id of this run, required at training")
         parser.add_argument("--seed", type=int, default=2018, help="random seed")
         parser.add_argument("--device", type=int, default=0, help="0 cuda, -1 cpu")
+        parser.add_argument("--gpu_id", type=int, default=0, help="the gpu id to use")
         parser.add_argument("--num_workers", type=int, default=4,
                             help="num subprocesses used to load the data, 0: use main process")
         parser.add_argument("--no_pin_memory", action="store_true",
@@ -66,7 +67,7 @@ class BaseOptions(object):
         parser.add_argument("--max_q_l", type=int, default=32)
         parser.add_argument("--max_v_l", type=int, default=75)
         parser.add_argument("--clip_length", type=int, default=2)
-        parser.add_argument("--max_windows", type=int, default=5)
+        parser.add_argument("--max_windows", type=int, default=10)
 
         parser.add_argument("--train_path", type=str, default=None)
         parser.add_argument("--eval_path", type=str, default=None,
@@ -128,6 +129,8 @@ class BaseOptions(object):
                             help="giou span coefficient in the matching cost")
         parser.add_argument('--set_cost_class', default=4, type=float,
                             help="Class coefficient in the matching cost")
+        parser.add_argument('--set_cost_mask', default=6, type=float,
+                            help="Segmentation coefficient in the matching cost")
 
         # * Loss coefficients
         parser.add_argument('--span_loss_coef', default=10, type=float)
@@ -136,6 +139,9 @@ class BaseOptions(object):
         parser.add_argument('--eos_coef', default=0.1, type=float,
                             help="Relative classification weight of the no-object class")
         parser.add_argument("--contrastive_align_loss_coef", default=0.0, type=float)
+
+        parser.add_argument("--mask_loss_coef", default=6, type=float)
+        parser.add_argument("--iou_scores_loss_coef", default=2, type=float)
 
         parser.add_argument("--no_sort_results", action="store_true",
                             help="do not sort results, use this for moment query visualization")

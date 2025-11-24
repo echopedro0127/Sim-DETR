@@ -11,7 +11,7 @@ eval_path=data/highlight_val_release.jsonl
 eval_split_name=val
 
 ######## setup video+text features
-feat_root=/inspurfs/group/yangsb/wzx/datasets/qvhighlight/
+feat_root=/data1/wzx/datasets/qvhighlights_feature
 
 
 # video features

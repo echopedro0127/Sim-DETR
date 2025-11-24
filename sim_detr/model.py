@@ -16,13 +16,34 @@ from sim_detr.interaction.test_CQA import VSLFuser
 import torchvision
 
 import numpy as np
+def mask_iou_loss(masks1, masks2, reduction='mean'):
+    '''
+    masks1: (N, max_v_l)
+    masks2: (N, max_v_l)
+    '''
+    intersection = torch.sum(masks1 * masks2, dim=1)
+    area1 = torch.sum(masks1, dim=1)
+    area2 = torch.sum(masks2, dim=1)
+    union = area1 + area2 - intersection
+    iou = intersection / union
+    
+    if reduction == 'mean':
+        return 1 - iou.mean()
+    elif reduction == 'sum':
+        return 1 - iou.sum()
+    elif reduction == 'none':
+        return 1 - iou
+    else:
+        raise ValueError(f"reduction '{reduction}' not supported")
+    
+
 def inverse_sigmoid(x, eps=1e-3):
     x = x.clamp(min=0, max=1)
     x1 = x.clamp(min=eps)
     x2 = (1 - x).clamp(min=eps)
     return torch.log(x1/x2)
 
-class TRDETR(nn.Module):
+class SimDETR(nn.Module):
     """ TR DETR. """
 
     def __init__(self, transformer, position_embed, txt_position_embed, txt_dim, vid_dim,
@@ -60,6 +81,8 @@ class TRDETR(nn.Module):
         span_pred_dim = 2 if span_loss_type == "l1" else max_v_l * 2
         self.span_embed = MLP(hidden_dim, hidden_dim, span_pred_dim, 3)
         self.class_embed = nn.Linear(hidden_dim, 2)  # 0: background, 1: foreground
+        self.transformer.decoder.span_embed = self.span_embed
+        self.transformer.decoder.class_embed = self.class_embed
         self.use_txt_pos = use_txt_pos
         self.n_input_proj = n_input_proj
 
@@ -88,6 +111,12 @@ class TRDETR(nn.Module):
 
         self.fuser = VSLFuser(transformer.d_model)
 
+        self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
+
+        self.mask_head = MLP(hidden_dim, hidden_dim, hidden_dim, 3)
+
+        self.iou_head = nn.Linear(hidden_dim, 1)
+        self.transformer.decoder.iou_head = self.iou_head
 
     def forward(self, src_txt, src_txt_mask, src_vid, src_vid_mask, src_aud=None, src_aud_mask=None):
         """The forward expects two tensors:
@@ -106,10 +135,11 @@ class TRDETR(nn.Module):
                - "aux_outputs": Optional, only returned when auxilary losses are activated. It is a list of
                                 dictionnaries containing the two above keys for each decoder layer.
         """
+        out = {}
         if src_aud is not None:
             src_vid = torch.cat([src_vid, src_aud], dim=2)
             
-        (b, t), l = src_vid.shape[:2], src_txt.shape[1]
+        b, l = src_txt.shape[:2]
         src_vid = self.input_vid_proj(src_vid)
         src_txt = self.input_txt_proj(src_txt)
 
@@ -124,6 +154,7 @@ class TRDETR(nn.Module):
         src_txt_cls_ed = src_sent
         
         src_vid = self.fuser(src_vid, src_txt, src_vid_mask, src_txt_mask)
+
         
         src = torch.cat([src_vid, src_txt], dim=1)  # (bsz, L_vid+L_txt, d)
         mask = torch.cat([src_vid_mask, src_txt_mask], dim=1).bool()  # (bsz, L_vid+L_txt)
@@ -135,14 +166,27 @@ class TRDETR(nn.Module):
 
         video_length = src_vid.shape[1]
         
-        hs, reference, memory, saliency_scores = self.transformer(src, ~mask, self.query_embed.weight, pos,self.saliency_proj1, video_length=video_length)
+        hs, reference, memory, saliency_scores = self.transformer(src, ~mask, self.query_embed.weight, pos,self.saliency_proj1, video_length=video_length, sent_feat=src_sent)
+        n_layers = hs.shape[0]
         outputs_class = self.class_embed(hs)  # (#layers, batch_size, #queries, #classes)
+        output_iou_scores = self.iou_head(hs) # (#layers, batch_size, #queries, 1)
+
+        hs_res = self.mask_head(hs)
+        hs_mask = hs + hs_res
+        query_norm = F.normalize(hs_mask, p=2, dim=-1)
+        vid_norm = F.normalize(memory[:, :src_vid.shape[1]], p=2, dim=-1).unsqueeze(0).repeat(n_layers, 1, 1, 1)
+        mask = torch.matmul(query_norm, vid_norm.transpose(-2, -1)) # (n_layers, bsz, #queries, L_vid)
+        mask_norm = (self.logit_scale.exp() * mask).sigmoid()
+        out["pred_masks"] = mask_norm[-2]
+
         reference_before_sigmoid = inverse_sigmoid(reference)
-        tmp = self.span_embed(hs)
-        outputs_coord = tmp + reference_before_sigmoid
+        outputs_coord = self.span_embed(hs) + reference_before_sigmoid
+
         if self.span_loss_type == "l1":
             outputs_coord = outputs_coord.sigmoid()
-        out = {'pred_logits': outputs_class[-1], 'pred_spans': outputs_coord[-1]}
+        out['pred_logits'] = outputs_class[-1]
+        out['pred_spans'] = outputs_coord[-1]
+        out['iou_scores'] = output_iou_scores[-1]
         
         txt_mem = memory[:, src_vid.shape[1]:]  # (bsz, L_txt, d)
         vid_mem = memory[:, :src_vid.shape[1]]  # (bsz, L_vid, d)
@@ -155,19 +199,12 @@ class TRDETR(nn.Module):
                 proj_txt_mem=proj_txt_mem,
                 proj_vid_mem=proj_vid_mem
             ))
-            
-            
-        # !!! this is code for test
-        if src_txt.shape[1] == 0:
-            print("There is zero text query. You should change codes properly")
-            exit(-1)
+
         out["saliency_scores"] = saliency_scores
-        # print(src_vid_mask.shape, src_vid.shape, vid_mem_neg.shape, vid_mem.shape)
         out["video_mask"] = src_vid_mask
         if self.aux_loss:
-            # assert proj_queries and proj_txt_mem
             out['aux_outputs'] = [
-                {'pred_logits': a, 'pred_spans': b} for a, b in zip(outputs_class[:-1], outputs_coord[:-1])]
+                {'pred_logits': a, 'pred_spans': b, 'pred_masks': c, 'iou_scores': d} for a, b, c, d in zip(outputs_class[:-1], outputs_coord[:-1], mask_norm[:-1], output_iou_scores[:-1])]
             if self.contrastive_align_loss:
                 assert proj_queries is not None
                 for idx, d in enumerate(proj_queries[:-1]):
@@ -222,6 +259,51 @@ class SetCriterion(nn.Module):
         # for tvsum,
         self.use_matcher = use_matcher
 
+    def loss_mask_iou(self, outputs, targets, indices):
+        """Compute the losses related to the segmentation mask predictions
+           targets dicts must contain the key "mask" containing a tensor of dim [nb_tgt_spans, max_v_l]
+        """
+        assert 'pred_masks' in outputs
+        targets = targets["mask_labels"]
+        idx = self._get_src_permutation_idx(indices)
+        src_masks = outputs['pred_masks'][idx]  # (#spans, max_v_l)
+        tgt_masks = torch.cat([t[i] for t, (_, i) in zip(targets, indices)], dim=0)  # (#spans, max_v_l)
+        # loss_mask = mask_iou_loss(src_masks, tgt_masks)
+        loss_mask = mask_iou_loss(src_masks, tgt_masks, reduction='mean')
+        losses = {}
+        losses['loss_mask_iou'] = loss_mask
+        return losses
+    
+    def loss_iou_scores(self, outputs, targets, indices):
+        """Compute the losses related to the iou scores
+           targets dicts must contain the key "iou_scores" containing a tensor of dim [nb_tgt_spans]
+        """
+        assert 'iou_scores' in outputs
+        iou_scores = outputs['iou_scores'][..., 0].sigmoid()  # (#layers, bsz, #queries)
+        src_spans = outputs['pred_spans'] # (bsz, #queries, 2)
+        src_spans = span_cxw_to_xx(src_spans)  # (bsz, #queries, 2)
+        tgt_spans = targets["span_labels"] # (bsz, #tgt_spans, 2)
+        max_spans = 10
+        paded_tgt_spans = torch.zeros([src_spans.shape[0], max_spans, 2], device=src_spans.device)
+        for b_ in range(src_spans.shape[0]):
+            tgt_span = tgt_spans[b_]['spans']
+            paded_tgt_spans[b_, :tgt_span.shape[0]] = tgt_span
+        tgt_spans = span_cxw_to_xx(paded_tgt_spans)  # (bsz, max_spans, 2)
+
+        areas1 = (src_spans[:, :, 1] - src_spans[:, :, 0]).clamp(min=0)
+        areas2 = (tgt_spans[:, :, 1] - tgt_spans[:, :, 0]).clamp(min=0)
+        intersection = (torch.min(src_spans[:, :, 1][:, :, None], tgt_spans[:, :, 1][:, None, :]) - torch.max(src_spans[:, :, 0][:, :, None], tgt_spans[:, :, 0][:, None, :])).clamp(min=0)
+        union = areas1[:, :, None] + areas2[:, None, :] - intersection
+        iou = intersection / union # (bsz, #queries, max_spans)
+        max_iou, _ = iou.max(dim=2)  # (bsz, #queries)
+
+        loss_iou = F.mse_loss(iou_scores, max_iou.detach())
+        losses = {}
+        losses['loss_iou_scores'] = loss_iou
+        return losses
+        
+
+
     def loss_spans(self, outputs, targets, indices):
         """Compute the losses related to the bounding boxes, the L1 regression loss and the GIoU loss
            targets dicts must contain the key "spans" containing a tensor of dim [nb_tgt_spans, 2]
@@ -230,7 +312,7 @@ class SetCriterion(nn.Module):
         assert 'pred_spans' in outputs
         targets = targets["span_labels"]
         idx = self._get_src_permutation_idx(indices)
-        src_spans = outputs['pred_spans'][idx]  # (#spans, max_v_l * 2)
+        src_spans = outputs['pred_spans'][idx]  # (#spans, 2)
         tgt_spans = torch.cat([t['spans'][i] for t, (_, i) in zip(targets, indices)], dim=0)  # (#spans, 2)
         if self.span_loss_type == "l1":
             loss_span = F.l1_loss(src_spans, tgt_spans, reduction='none')
@@ -250,7 +332,6 @@ class SetCriterion(nn.Module):
         """Classification loss (NLL)
         targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
         """
-        # TODO add foreground and background classifier.  use all non-matched as background.
         assert 'pred_logits' in outputs
         src_logits = outputs['pred_logits']  # (batch_size, #queries, #classes=2)
         # idx is a tuple of two 1D tensors (batch_idx, src_idx), of the same length == #objects in batch
@@ -265,7 +346,6 @@ class SetCriterion(nn.Module):
         losses = {'loss_label': loss_ce.mean()}
 
         if log:
-            # TODO this should probably be a separate loss, not hacked in this one here
             losses['class_error'] = 100 - accuracy(src_logits[idx], self.foreground_label)[0]
         return losses
     
@@ -347,8 +427,6 @@ class SetCriterion(nn.Module):
 
     def loss_contrastive_align_vid_txt(self, outputs, targets, indices, log=True):
         """encourage higher scores between matched query span and input text"""
-        # TODO (1)  align vid_mem and txt_mem;
-        # TODO (2) change L1 loss as CE loss on 75 labels, similar to soft token prediction in MDETR
         normalized_text_embed = outputs["proj_txt_mem"]  # (bsz, #tokens, d)  text tokens
         normalized_img_embed = outputs["proj_queries"]  # (bsz, #queries, d)
         logits = torch.einsum(
@@ -384,6 +462,8 @@ class SetCriterion(nn.Module):
             "labels": self.loss_labels,
             "contrastive_align": self.loss_contrastive_align,
             "saliency": self.loss_saliency,
+            "mask_iou": self.loss_mask_iou,
+            "iou_scores": self.loss_iou_scores
         }
         assert loss in loss_map, f'do you really want to compute {loss} loss?'
         return loss_map[loss](outputs, targets, indices, **kwargs)
@@ -488,9 +568,9 @@ def build_model(args):
 
     transformer = build_transformer(args)
     position_embedding, txt_position_embedding = build_position_encoding(args)
-    # 根据是否使用音频来构建模型S
+    # build the model according to whether audio features are used
     if args.a_feat_dir is None:
-        model = TRDETR(
+        model = SimDETR(
             transformer,
             position_embedding,
             txt_position_embedding,
@@ -507,7 +587,7 @@ def build_model(args):
             clip_len=args.clip_length
         )
     else:
-        model = TRDETR(
+        model = SimDETR(
             transformer,
             position_embedding,
             txt_position_embedding,
@@ -529,7 +609,10 @@ def build_model(args):
     weight_dict = {"loss_span": args.span_loss_coef,
                    "loss_giou": args.giou_loss_coef,
                    "loss_label": args.label_loss_coef,
-                   "loss_saliency": args.lw_saliency}
+                   "loss_saliency": args.lw_saliency,
+                   "loss_mask_iou": args.mask_loss_coef,
+                   "loss_iou_scores": args.iou_scores_loss_coef
+                   }
     if args.contrastive_align_loss:
         weight_dict["loss_contrastive_align"] = args.contrastive_align_loss_coef
     # TODO this is a hack
@@ -539,7 +622,9 @@ def build_model(args):
             aux_weight_dict.update({k + f'_{i}': v for k, v in weight_dict.items() if k != "loss_saliency"})
         weight_dict.update(aux_weight_dict)
 
-    losses = ['spans', 'labels', 'saliency']
+    weight_dict['loss_mask_iou'] = 0
+
+    losses = ['spans', 'labels', 'saliency', 'mask_iou', 'iou_scores']
     if args.contrastive_align_loss:
         losses += ["contrastive_align"]
         

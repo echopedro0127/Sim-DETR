@@ -1,6 +1,8 @@
 # [ICCV2025] Sim-DETR: Unlock DETR for Temporal Sentence Grounding
 
-by Jiajin Tang<sup>* </sup>, Zhengxuan Wei<sup>* </sup>, Yuchen Zhu, Cheng Shi, Guanbin Li, Liang Lin, Sibei Yang<sup>† </sup>
+by Jiajin Tang*, Zhengxuan Wei*, Yuchen Zhu, Cheng Shi, Guanbin Li, Liang Lin, Sibei Yang†
+
+*Equal contribution; †Corresponding Author
 
 
 [![arXiv:2509.23867](https://img.shields.io/badge/arXiv-2509.23867-red)](https://arxiv.org/abs/2509.23867)
@@ -19,7 +21,7 @@ cd Sim-DETR
 ### 1. Prepare datasets
 #### QVHighlights
 
-We use video features (CLIP and SlowFast) and text features (CLIP) as inputs. For CLIP, we utilize the features extracted by [R2-Tuning](https://github.com/yeliudev/R2-Tuning) (from the last four layers), but we retain only the `[CLS]` token per frame to ensure efficiency. Please download the prepared feature files from [qvhighlights\_features](https://www.google.com/search?q=https://drive.google.com/drive/folders/1rRVID6OO5arVR1vL5SP5fcCFAJ35B-IK%3Fusp%3Dsharing) and unzip them to your data root directory.
+We use video features (CLIP and SlowFast) and text features (CLIP) as inputs. For CLIP, we utilize the features extracted by [R2-Tuning](https://github.com/yeliudev/R2-Tuning) (from the last four layers), but we retain only the `[CLS]` token per frame to ensure efficiency. You can download our prepared feature files from [qvhighlights\_features](https://drive.google.com/drive/folders/1rRVID6OO5arVR1vL5SP5fcCFAJ35B-IK?usp=sharing) and unzip them to your data root directory.
 
 
 ### 2. Install dependencies

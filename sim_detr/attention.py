@@ -121,8 +121,8 @@ class MultiheadAttention(Module):
         super(MultiheadAttention, self).__setstate__(state)
 
     def forward(self, query, key, value, key_padding_mask=None,
-                need_weights=True, attn_mask=None):
-        # type: (Tensor, Tensor, Tensor, Optional[Tensor], bool, Optional[Tensor]) -> Tuple[Tensor, Optional[Tensor]]
+                need_weights=True, attn_mask=None,
+                sa_decay=None):
         r"""
     Args:
         query, key, value: map a query and a set of key-value pairs to an output.
@@ -170,7 +170,8 @@ class MultiheadAttention(Module):
                 key_padding_mask=key_padding_mask, need_weights=need_weights,
                 attn_mask=attn_mask, use_separate_proj_weight=True,
                 q_proj_weight=self.q_proj_weight, k_proj_weight=self.k_proj_weight,
-                v_proj_weight=self.v_proj_weight, out_dim=self.vdim)
+                v_proj_weight=self.v_proj_weight, out_dim=self.vdim,
+                sa_decay=sa_decay)
         else:
             return multi_head_attention_forward(
                 query, key, value, self.embed_dim, self.num_heads,
@@ -179,7 +180,8 @@ class MultiheadAttention(Module):
                 self.dropout, self.out_proj.weight, self.out_proj.bias,
                 training=self.training,
                 key_padding_mask=key_padding_mask, need_weights=need_weights,
-                attn_mask=attn_mask, out_dim=self.vdim)
+                attn_mask=attn_mask, out_dim=self.vdim,
+                sa_decay=sa_decay)
 
 
 def multi_head_attention_forward(query: Tensor,
@@ -205,7 +207,8 @@ def multi_head_attention_forward(query: Tensor,
                                  v_proj_weight: Optional[Tensor] = None,
                                  static_k: Optional[Tensor] = None,
                                  static_v: Optional[Tensor] = None,
-                                 out_dim: Optional[Tensor] = None
+                                 out_dim: Optional[Tensor] = None,
+                                 sa_decay: Optional[Tensor] = None
                                  ) -> Tuple[Tensor, Optional[Tensor]]:
     r"""
     Args:
@@ -358,6 +361,8 @@ def multi_head_attention_forward(query: Tensor,
             key_padding_mask = pad(key_padding_mask, (0, 1))
 
     attn_output_weights = torch.bmm(q, k.transpose(1, 2))
+    if sa_decay is not None:
+        attn_output_weights = attn_output_weights * sa_decay
     assert list(attn_output_weights.size()) == [bsz * num_heads, tgt_len, src_len]
 
     if attn_mask is not None:
