@@ -101,7 +101,12 @@ def compute_hl_results(model, eval_loader, opt, epoch_i=None, criterion=None, tb
     topk = torch.tensor(5).cuda() # top-5 map
 
     video_ap_collected = []
-    for batch in tqdm(eval_loader, desc="compute st ed scores"):
+    num_eval_batches = len(eval_loader)
+    log_interval = max(1, num_eval_batches // 10)
+    logger.info(f"Starting evaluation on {num_eval_batches} batches...")
+    for batch_idx, batch in enumerate(eval_loader):
+        if batch_idx % log_interval == 0 or batch_idx == num_eval_batches - 1:
+            logger.info(f"Evaluation Progress: [{batch_idx}/{num_eval_batches}] ({100*batch_idx/num_eval_batches:.1f}%)")
         query_meta = batch[0]
         if opt.a_feat_dir is None:
             model_inputs, targets = prepare_batch_inputs(batch[1], opt.device, non_blocking=opt.pin_memory)
@@ -183,7 +188,12 @@ def compute_mr_results(model, eval_loader, opt, epoch_i=None, criterion=None, tb
     write_tb = tb_writer is not None and epoch_i is not None
 
     mr_res = []
-    for batch in tqdm(eval_loader, desc="compute st ed scores"):
+    num_eval_batches = len(eval_loader)
+    log_interval = max(1, num_eval_batches // 10)
+    logger.info(f"Starting MR evaluation on {num_eval_batches} batches...")
+    for batch_idx, batch in enumerate(eval_loader):
+        if batch_idx % log_interval == 0 or batch_idx == num_eval_batches - 1:
+            logger.info(f"MR Evaluation Progress: [{batch_idx}/{num_eval_batches}] ({100*batch_idx/num_eval_batches:.1f}%)")
         query_meta = batch[0]
         if opt.a_feat_dir is None:
             model_inputs, targets = prepare_batch_inputs(batch[1], opt.device, non_blocking=opt.pin_memory)
@@ -422,6 +432,11 @@ def start_inference(train_opt=None, split=None, splitfile=None):
 
 from sys import argv
 if __name__ == '__main__':
-    _,_,_,_,split,_,splitfile = argv
-
-    start_inference(split=split, splitfile=splitfile)
+    # Check if called with old-style positional arguments (7 args)
+    # or new-style with argparse (variable args)
+    if len(argv) == 7:
+        _,_,_,_,split,_,splitfile = argv
+        start_inference(split=split, splitfile=splitfile)
+    else:
+        # Use argparse for flexible argument parsing
+        start_inference()

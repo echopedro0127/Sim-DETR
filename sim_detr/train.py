@@ -55,10 +55,15 @@ def train_epoch(model, criterion, train_loader, optimizer, opt, epoch_i, tb_writ
 
     num_training_examples = len(train_loader)
     timer_dataloading = time.time()
-    for batch_idx, batch in tqdm(enumerate(train_loader),
-                                 desc="Training Iteration",
-                                 total=num_training_examples):
+    # Disable tqdm dynamic updates to reduce log verbosity
+    # Only log every 10% of progress
+    log_interval = max(1, num_training_examples // 10)
+    for batch_idx, batch in enumerate(train_loader):
         time_meters["dataloading_time"].update(time.time() - timer_dataloading)
+
+        # Log progress at intervals
+        if batch_idx % log_interval == 0 or batch_idx == num_training_examples - 1:
+            logger.info(f"Training Progress: [{batch_idx}/{num_training_examples}] ({100*batch_idx/num_training_examples:.1f}%)")
 
         timer_start = time.time()
         if opt.a_feat_dir is None:
@@ -170,7 +175,11 @@ def train(model, criterion, optimizer, lr_scheduler, train_dataset, val_dataset,
     else:
         start_epoch = opt.start_epoch
     save_submission_filename = "latest_{}_{}_preds.jsonl".format(opt.dset_name, opt.eval_split_name)
-    for epoch_i in trange(start_epoch, opt.n_epoch, desc="Epoch"):
+    logger.info(f"Starting training from epoch {start_epoch} to {opt.n_epoch}")
+    for epoch_i in range(start_epoch, opt.n_epoch):
+        logger.info(f"=" * 80)
+        logger.info(f"Epoch {epoch_i+1}/{opt.n_epoch}")
+        logger.info(f"=" * 80)
         if epoch_i > -1:
             train_epoch(model, criterion, train_loader, optimizer, opt, epoch_i, tb_writer) 
             lr_scheduler.step()
@@ -275,7 +284,11 @@ def train_hl(model, criterion, optimizer, lr_scheduler, train_dataset, val_datas
     else:
         start_epoch = opt.start_epoch
     save_submission_filename = "latest_{}_{}_preds.jsonl".format(opt.dset_name, opt.eval_split_name)
-    for epoch_i in trange(start_epoch, opt.n_epoch, desc="Epoch"):
+    logger.info(f"Starting training from epoch {start_epoch} to {opt.n_epoch}")
+    for epoch_i in range(start_epoch, opt.n_epoch):
+        logger.info(f"=" * 80)
+        logger.info(f"Epoch {epoch_i+1}/{opt.n_epoch}")
+        logger.info(f"=" * 80)
         if epoch_i > -1:
             train_epoch(model, criterion, train_loader, optimizer, opt, epoch_i, tb_writer)
             lr_scheduler.step()
