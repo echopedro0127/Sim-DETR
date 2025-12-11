@@ -1,0 +1,378 @@
+==========================================
+Starting Quick Training (5 epochs)
+==========================================
+Experiment ID: internvideo2_5epoch_20251211_130146
+Results will be saved to: results_internvideo2_quick/internvideo2_5epoch_20251211_130146
+Video feature dim: 3840
+Text feature dim: 5120
+==========================================
+|                             | 0                                                                                               |
+|:----------------------------|:------------------------------------------------------------------------------------------------|
+| dset_name                   | hl                                                                                              |
+| dset_domain                 |                                                                                                 |
+| eval_split_name             | val                                                                                             |
+| debug                       | False                                                                                           |
+| data_ratio                  | 1.0                                                                                             |
+| results_root                | results_internvideo2_quick                                                                      |
+| exp_id                      | internvideo2_5epoch_20251211_130146                                                             |
+| seed                        | 2017                                                                                            |
+| device                      | 0                                                                                               |
+| gpu_id                      | 0                                                                                               |
+| num_workers                 | 4                                                                                               |
+| no_pin_memory               | False                                                                                           |
+| lr                          | 0.0001                                                                                          |
+| lr_drop                     | 3                                                                                               |
+| wd                          | 0.0001                                                                                          |
+| n_epoch                     | 5                                                                                               |
+| max_es_cnt                  | 5                                                                                               |
+| bsz                         | 32                                                                                              |
+| eval_bsz                    | 100                                                                                             |
+| grad_clip                   | 0.1                                                                                             |
+| eval_untrained              | False                                                                                           |
+| resume                      |                                                                                                 |
+| resume_all                  | False                                                                                           |
+| start_epoch                 |                                                                                                 |
+| max_q_l                     | 32                                                                                              |
+| max_v_l                     | 75                                                                                              |
+| clip_length                 | 2                                                                                               |
+| max_windows                 | 10                                                                                              |
+| train_path                  | data/highlight_train_release.jsonl                                                              |
+| eval_path                   | data/highlight_val_release.jsonl                                                                |
+| no_norm_vfeat               | False                                                                                           |
+| no_norm_tfeat               | False                                                                                           |
+| v_feat_dirs                 | ['/home/cl/vscode/sdst_datasets/data/qvhighlights/vid_feats']                                   |
+| t_feat_dir                  | /home/cl/vscode/sdst_datasets/data/qvhighlights/txt_feats                                       |
+| a_feat_dir                  |                                                                                                 |
+| v_feat_dim                  | 3840                                                                                            |
+| t_feat_dim                  | 5120                                                                                            |
+| a_feat_dim                  |                                                                                                 |
+| ctx_mode                    | video_tef                                                                                       |
+| position_embedding          | sine                                                                                            |
+| enc_layers                  | 2                                                                                               |
+| dec_layers                  | 4                                                                                               |
+| dim_feedforward             | 1024                                                                                            |
+| hidden_dim                  | 256                                                                                             |
+| input_dropout               | 0.5                                                                                             |
+| dropout                     | 0.1                                                                                             |
+| txt_drop_ratio              | 0                                                                                               |
+| use_txt_pos                 | False                                                                                           |
+| nheads                      | 8                                                                                               |
+| num_queries                 | 10                                                                                              |
+| pre_norm                    | False                                                                                           |
+| n_input_proj                | 2                                                                                               |
+| contrastive_hdim            | 64                                                                                              |
+| temperature                 | 0.07                                                                                            |
+| lw_saliency                 | 1.0                                                                                             |
+| saliency_margin             | 0.2                                                                                             |
+| aux_loss                    | True                                                                                            |
+| span_loss_type              | l1                                                                                              |
+| contrastive_align_loss      | False                                                                                           |
+| set_cost_span               | 10                                                                                              |
+| set_cost_giou               | 1                                                                                               |
+| set_cost_class              | 4                                                                                               |
+| set_cost_mask               | 6                                                                                               |
+| span_loss_coef              | 10                                                                                              |
+| giou_loss_coef              | 1                                                                                               |
+| label_loss_coef             | 4.0                                                                                             |
+| eos_coef                    | 0.1                                                                                             |
+| contrastive_align_loss_coef | 0.0                                                                                             |
+| mask_loss_coef              | 6                                                                                               |
+| iou_scores_loss_coef        | 2                                                                                               |
+| no_sort_results             | False                                                                                           |
+| max_before_nms              | 10                                                                                              |
+| max_after_nms               | 10                                                                                              |
+| conf_thd                    | 0.0                                                                                             |
+| nms_thd                     | -1                                                                                              |
+| VTC_loss_coef               | 0.3                                                                                             |
+| CTC_loss_coef               | 0.5                                                                                             |
+| results_dir                 | results_internvideo2_quick/hl-video_tef-internvideo2_5epoch_20251211_130146-2025_12_11_13_01_50 |2025-12-11 13:01:50.565:INFO:__main__ - Setup config, data and model...
+2025-12-11 13:01:50.565:INFO:__main__ - Using InternVideo2 dataset loader
+2025-12-11 13:01:51.043:INFO:sim_detr.inference - setup model/optimizer/scheduler
+2025-12-11 13:01:51.362:INFO:sim_detr.inference - CUDA enabled.
+2025-12-11 13:01:51.388:WARNING:sim_detr.inference - If you intend to evaluate the model, please specify --resume with ckpt path
+2025-12-11 13:01:51.390:INFO:__main__ - Start Training...
+2025-12-11 13:01:51.390:INFO:__main__ - CUDA enabled.
+Parameter Count: all 12,198,125; trainable 12,198,125
+Epoch:   0%|          | 0/5 [00:00<?, ?it/s]2025-12-11 13:01:51.403:INFO:__main__ - [Epoch 1]
+Training Iteration: 100%|██████████| 226/226 [00:53<00:00,  4.25it/s]
+2025-12-11 13:02:44.706:INFO:__main__ - Epoch 1 Losses: {'loss_span': 1.0622726937970228, 'loss_giou': 0.7851026672705085, 'loss_label': 0.2095928376754828, 'class_error': 99.58794004727254, 'loss_saliency': 4.051146304712886, 'loss_mask_iou': 0.0, 'loss_iou_scores': 0.0890704690997975, 'loss_span_0': 0.9600104213552137, 'loss_giou_0': 0.6968722741688247, 'loss_label_0': 0.21461802932013452, 'class_error_0': 99.51987865751823, 'loss_mask_iou_0': 4.957877225052994, 'loss_iou_scores_0': 0.08984609360320378, 'loss_span_1': 0.9348154842721678, 'loss_giou_1': 0.7196351258100662, 'loss_label_1': 0.20929865242369408, 'class_error_1': 99.88211673972881, 'loss_mask_iou_1': 4.957076686145985, 'loss_iou_scores_1': 0.08806510657006134, 'loss_span_2': 0.9823488608925743, 'loss_giou_2': 0.7470561040449987, 'loss_label_2': 0.21046545092774704, 'class_error_2': 99.86356934403952, 'loss_mask_iou_2': 4.957830054570088, 'loss_iou_scores_2': 0.08848826404232367, 'loss_overall': 28.323942437636113}
+2025-12-11 13:02:44.713:INFO:sim_detr.inference - Generate submissions
+compute st ed scores: 100%|██████████| 16/16 [00:04<00:00,  3.50it/s]
+convert to multiples of clip_length=2:   0%|          | 0/1550 [00:00<?, ?it/s]
+convert to multiples of clip_length=2:  43%|████▎     | 668/1550 [00:00<00:00, 6677.46it/s]
+convert to multiples of clip_length=2: 100%|██████████| 1550/1550 [00:00<00:00, 7343.91it/s]
+2025-12-11 13:02:49.498:INFO:sim_detr.inference - Saving/Evaluating before nms results
+short: [0, 10], 429/1550=27.68 examples.
+middle: [10, 30], 957/1550=61.74 examples.
+long: [30, 150], 574/1550=37.03 examples.
+full: [0, 150], 1550/1550=100.00 examples.
+2025-12-11 13:02:54.940:INFO:__main__ - metrics_no_nms OrderedDict([   ('MR-full-R1@0.5', 7.03),
+                ('MR-full-R1@0.7', 1.55),
+                ('MR-full-mAP', 4.71),
+                ('MR-full-mAP@0.5', 13.12),
+                ('MR-full-mAP@0.75', 2.66),
+                ('MR-long-mAP', 7.9),
+                ('MR-middle-mAP', 4.19),
+                ('MR-short-mAP', 0.88),
+                ('HL-min-Fair-mAP', 50.93),
+                ('HL-min-Fair-Hit1', 39.61),
+                ('HL-min-Good-mAP', 43.79),
+                ('HL-min-Good-Hit1', 38.26),
+                ('HL-min-VeryGood-mAP', 26.96),
+                ('HL-min-VeryGood-Hit1', 32.19)])
+2025-12-11 13:02:55.210:INFO:__main__ - The checkpoint file has been updated.
+Epoch:  20%|██        | 1/5 [01:04<04:16, 64.05s/it]2025-12-11 13:02:55.455:INFO:__main__ - [Epoch 2]
+Training Iteration: 100%|██████████| 226/226 [00:54<00:00,  4.17it/s]
+2025-12-11 13:03:49.848:INFO:__main__ - Epoch 2 Losses: {'loss_span': 0.8818940524901964, 'loss_giou': 0.6954345001583606, 'loss_label': 0.20452894204485733, 'class_error': 100.0, 'loss_saliency': 3.859819168538119, 'loss_mask_iou': 0.0, 'loss_iou_scores': 0.0876625031067998, 'loss_span_0': 0.8870147592264467, 'loss_giou_0': 0.6903674526024709, 'loss_label_0': 0.20708343182253627, 'class_error_0': 99.91853703861743, 'loss_mask_iou_0': 4.6990520273689675, 'loss_iou_scores_0': 0.08653562873667847, 'loss_span_1': 0.8680156964511998, 'loss_giou_1': 0.6878490159205631, 'loss_label_1': 0.20647185341974275, 'class_error_1': 100.0, 'loss_mask_iou_1': 4.696351672695801, 'loss_iou_scores_1': 0.08707546785605692, 'loss_span_2': 0.8710739281918622, 'loss_giou_2': 0.6918934461026065, 'loss_label_2': 0.20642721903535116, 'class_error_2': 99.84965714311178, 'loss_mask_iou_2': 4.6960887434208285, 'loss_iou_scores_2': 0.08817205733034462, 'loss_overall': 26.600108112909098}
+2025-12-11 13:03:49.855:INFO:sim_detr.inference - Generate submissions
+compute st ed scores: 100%|██████████| 16/16 [00:04<00:00,  3.59it/s]
+convert to multiples of clip_length=2:   0%|          | 0/1550 [00:00<?, ?it/s]
+convert to multiples of clip_length=2: 100%|██████████| 1550/1550 [00:00<00:00, 9017.79it/s]
+2025-12-11 13:03:54.493:INFO:sim_detr.inference - Saving/Evaluating before nms results
+short: [0, 10], 429/1550=27.68 examples.
+middle: [10, 30], 957/1550=61.74 examples.
+long: [30, 150], 574/1550=37.03 examples.
+full: [0, 150], 1550/1550=100.00 examples.
+2025-12-11 13:03:59.792:INFO:__main__ - metrics_no_nms OrderedDict([   ('MR-full-R1@0.5', 20.39),
+                ('MR-full-R1@0.7', 7.29),
+                ('MR-full-mAP', 11.5),
+                ('MR-full-mAP@0.5', 28.41),
+                ('MR-full-mAP@0.75', 8.27),
+                ('MR-long-mAP', 12.43),
+                ('MR-middle-mAP', 13.77),
+                ('MR-short-mAP', 1.22),
+                ('HL-min-Fair-mAP', 61.91),
+                ('HL-min-Fair-Hit1', 58.65),
+                ('HL-min-Good-mAP', 53.52),
+                ('HL-min-Good-Hit1', 56.84),
+                ('HL-min-VeryGood-mAP', 33.37),
+                ('HL-min-VeryGood-Hit1', 48.19)])
+2025-12-11 13:04:01.544:INFO:__main__ - The checkpoint file has been updated.
+Epoch:  40%|████      | 2/5 [02:11<03:18, 66.30s/it]2025-12-11 13:04:03.326:INFO:__main__ - [Epoch 3]
+Training Iteration: 100%|██████████| 226/226 [00:55<00:00,  4.11it/s]
+2025-12-11 13:04:58.539:INFO:__main__ - Epoch 3 Losses: {'loss_span': 0.7423883704551025, 'loss_giou': 0.6033648077101834, 'loss_label': 0.19475049195827637, 'class_error': 99.39414994906535, 'loss_saliency': 3.685024311057234, 'loss_mask_iou': 0.0, 'loss_iou_scores': 0.08265262919651196, 'loss_span_0': 0.7596312384162329, 'loss_giou_0': 0.598650771168481, 'loss_label_0': 0.2053644955817577, 'class_error_0': 99.48847083707827, 'loss_mask_iou_0': 4.36209928725673, 'loss_iou_scores_0': 0.09603515214624658, 'loss_span_1': 0.7402011755425318, 'loss_giou_1': 0.6011253268317839, 'loss_label_1': 0.20441011636130577, 'class_error_1': 100.0, 'loss_mask_iou_1': 4.362282231318212, 'loss_iou_scores_1': 0.09497236368139234, 'loss_span_2': 0.7401357088402837, 'loss_giou_2': 0.6041304252843941, 'loss_label_2': 0.20371492648810413, 'class_error_2': 100.0, 'loss_mask_iou_2': 4.3624642290900235, 'loss_iou_scores_2': 0.09554617057463764, 'loss_overall': 24.51002719339016}
+2025-12-11 13:04:58.548:INFO:sim_detr.inference - Generate submissions
+compute st ed scores: 100%|██████████| 16/16 [00:04<00:00,  3.71it/s]
+convert to multiples of clip_length=2:   0%|          | 0/1550 [00:00<?, ?it/s]
+convert to multiples of clip_length=2:  48%|████▊     | 748/1550 [00:00<00:00, 7475.89it/s]
+convert to multiples of clip_length=2: 100%|██████████| 1550/1550 [00:00<00:00, 7443.37it/s]
+2025-12-11 13:05:03.078:INFO:sim_detr.inference - Saving/Evaluating before nms results
+short: [0, 10], 429/1550=27.68 examples.
+middle: [10, 30], 957/1550=61.74 examples.
+long: [30, 150], 574/1550=37.03 examples.
+full: [0, 150], 1550/1550=100.00 examples.
+2025-12-11 13:05:08.493:INFO:__main__ - metrics_no_nms OrderedDict([   ('MR-full-R1@0.5', 33.81),
+                ('MR-full-R1@0.7', 14.26),
+                ('MR-full-mAP', 16.05),
+                ('MR-full-mAP@0.5', 38.23),
+                ('MR-full-mAP@0.75', 12.19),
+                ('MR-long-mAP', 11.88),
+                ('MR-middle-mAP', 22.45),
+                ('MR-short-mAP', 1.97),
+                ('HL-min-Fair-mAP', 69.86),
+                ('HL-min-Fair-Hit1', 69.87),
+                ('HL-min-Good-mAP', 60.03),
+                ('HL-min-Good-Hit1', 67.61),
+                ('HL-min-VeryGood-mAP', 36.84),
+                ('HL-min-VeryGood-Hit1', 56.19)])
+2025-12-11 13:05:10.205:INFO:__main__ - The checkpoint file has been updated.
+Epoch:  60%|██████    | 3/5 [03:20<02:15, 67.53s/it]2025-12-11 13:05:12.326:INFO:__main__ - [Epoch 4]
+Training Iteration: 100%|██████████| 226/226 [00:51<00:00,  4.36it/s]
+2025-12-11 13:06:04.364:INFO:__main__ - Epoch 4 Losses: {'loss_span': 0.67314984903267, 'loss_giou': 0.5672114757837448, 'loss_label': 0.18299108941470626, 'class_error': 96.76927451749819, 'loss_saliency': 3.549577395472906, 'loss_mask_iou': 0.0, 'loss_iou_scores': 0.07112611329133532, 'loss_span_0': 0.6965822767697077, 'loss_giou_0': 0.5623172098292714, 'loss_label_0': 0.203071624304341, 'class_error_0': 99.84463936459701, 'loss_mask_iou_0': 4.1200415370738614, 'loss_iou_scores_0': 0.09784538938408405, 'loss_span_1': 0.6865604299293683, 'loss_giou_1': 0.566908427308091, 'loss_label_1': 0.19735189777823675, 'class_error_1': 100.0, 'loss_mask_iou_1': 4.120992585093574, 'loss_iou_scores_1': 0.09243879724392849, 'loss_span_2': 0.6810505317309788, 'loss_giou_2': 0.5691014424098276, 'loss_label_2': 0.19637793632207717, 'class_error_2': 100.0, 'loss_mask_iou_2': 4.1210044089671785, 'loss_iou_scores_2': 0.09057041013662794, 'loss_overall': 23.193576399203952}
+2025-12-11 13:06:04.371:INFO:sim_detr.inference - Generate submissions
+compute st ed scores: 100%|██████████| 16/16 [00:04<00:00,  3.75it/s]
+convert to multiples of clip_length=2:   0%|          | 0/1550 [00:00<?, ?it/s]
+convert to multiples of clip_length=2:  49%|████▉     | 758/1550 [00:00<00:00, 7573.33it/s]
+convert to multiples of clip_length=2: 100%|██████████| 1550/1550 [00:00<00:00, 7611.02it/s]
+2025-12-11 13:06:08.847:INFO:sim_detr.inference - Saving/Evaluating before nms results
+short: [0, 10], 429/1550=27.68 examples.
+middle: [10, 30], 957/1550=61.74 examples.
+long: [30, 150], 574/1550=37.03 examples.
+full: [0, 150], 1550/1550=100.00 examples.
+2025-12-11 13:06:14.033:INFO:__main__ - metrics_no_nms OrderedDict([   ('MR-full-R1@0.5', 44.06),
+                ('MR-full-R1@0.7', 19.03),
+                ('MR-full-mAP', 22.02),
+                ('MR-full-mAP@0.5', 48.1),
+                ('MR-full-mAP@0.75', 17.87),
+                ('MR-long-mAP', 21.18),
+                ('MR-middle-mAP', 27.51),
+                ('MR-short-mAP', 2.14),
+                ('HL-min-Fair-mAP', 70.67),
+                ('HL-min-Fair-Hit1', 70.97),
+                ('HL-min-Good-mAP', 60.84),
+                ('HL-min-Good-Hit1', 69.1),
+                ('HL-min-VeryGood-mAP', 37.45),
+                ('HL-min-VeryGood-Hit1', 58.13)])
+2025-12-11 13:06:15.692:INFO:__main__ - The checkpoint file has been updated.
+Epoch:  80%|████████  | 4/5 [04:26<01:06, 66.61s/it]2025-12-11 13:06:17.535:INFO:__main__ - [Epoch 5]
+Training Iteration: 100%|██████████| 226/226 [00:53<00:00,  4.20it/s]
+2025-12-11 13:07:11.463:INFO:__main__ - Epoch 5 Losses: {'loss_span': 0.6425981045560499, 'loss_giou': 0.5547966582585225, 'loss_label': 0.18278654440578107, 'class_error': 94.57968186910173, 'loss_saliency': 3.5200860088905404, 'loss_mask_iou': 0.0, 'loss_iou_scores': 0.07293341333557547, 'loss_span_0': 0.6790885083641098, 'loss_giou_0': 0.5575027484281928, 'loss_label_0': 0.20291016237661902, 'class_error_0': 99.8838742349, 'loss_mask_iou_0': 4.083114709474344, 'loss_iou_scores_0': 0.09705507606927273, 'loss_span_1': 0.6629049604906972, 'loss_giou_1': 0.5580371671018347, 'loss_label_1': 0.1956493565730289, 'class_error_1': 99.9931926558503, 'loss_mask_iou_1': 4.083877336662428, 'loss_iou_scores_1': 0.09145366894987832, 'loss_span_2': 0.6543853967986276, 'loss_giou_2': 0.5567375078665472, 'loss_label_2': 0.1946494153379339, 'class_error_2': 100.0, 'loss_mask_iou_2': 4.084000050494101, 'loss_iou_scores_2': 0.09079029111076245, 'loss_overall': 22.905333037924976}
+2025-12-11 13:07:11.470:INFO:sim_detr.inference - Generate submissions
+compute st ed scores: 100%|██████████| 16/16 [00:04<00:00,  3.87it/s]
+convert to multiples of clip_length=2:   0%|          | 0/1550 [00:00<?, ?it/s]
+convert to multiples of clip_length=2:  49%|████▊     | 755/1550 [00:00<00:00, 7542.58it/s]
+convert to multiples of clip_length=2: 100%|██████████| 1550/1550 [00:00<00:00, 7566.67it/s]
+2025-12-11 13:07:15.809:INFO:sim_detr.inference - Saving/Evaluating before nms results
+short: [0, 10], 429/1550=27.68 examples.
+middle: [10, 30], 957/1550=61.74 examples.
+long: [30, 150], 574/1550=37.03 examples.
+full: [0, 150], 1550/1550=100.00 examples.
+2025-12-11 13:07:21.222:INFO:__main__ - metrics_no_nms OrderedDict([   ('MR-full-R1@0.5', 48.0),
+                ('MR-full-R1@0.7', 22.9),
+                ('MR-full-mAP', 24.52),
+                ('MR-full-mAP@0.5', 51.22),
+                ('MR-full-mAP@0.75', 20.58),
+                ('MR-long-mAP', 24.39),
+                ('MR-middle-mAP', 30.2),
+                ('MR-short-mAP', 2.19),
+                ('HL-min-Fair-mAP', 71.44),
+                ('HL-min-Fair-Hit1', 72.39),
+                ('HL-min-Good-mAP', 61.44),
+                ('HL-min-Good-Hit1', 70.32),
+                ('HL-min-VeryGood-mAP', 38.04),
+                ('HL-min-VeryGood-Hit1', 59.42)])
+2025-12-11 13:07:22.791:INFO:__main__ - The checkpoint file has been updated.
+Epoch: 100%|██████████| 5/5 [05:33<00:00, 66.62s/it]
+2025-12-11 13:07:24.550:INFO:__main__ - 
+FINISHED TRAINING!!!
+2025-12-11 13:07:24.550:INFO:__main__ - Evaluating model at results_internvideo2_quick/hl-video_tef-internvideo2_5epoch_20251211_130146-2025_12_11_13_01_50/model_best.ckpt
+2025-12-11 13:07:24.550:INFO:__main__ - Input args ['--resume', 'results_internvideo2_quick/hl-video_tef-internvideo2_5epoch_20251211_130146-2025_12_11_13_01_50/model_best.ckpt', '--eval_split_name', 'val', '--eval_path', 'data/highlight_val_release.jsonl']
+|                             | 0                                                                                                               |
+|:----------------------------|:----------------------------------------------------------------------------------------------------------------|
+| dset_name                   | hl                                                                                                              |
+| dset_domain                 |                                                                                                                 |
+| eval_split_name             | val                                                                                                             |
+| debug                       | False                                                                                                           |
+| data_ratio                  | 1.0                                                                                                             |
+| results_root                | results                                                                                                         |
+| exp_id                      | internvideo2_5epoch_20251211_130146                                                                             |
+| seed                        | 2017                                                                                                            |
+| device                      | 0                                                                                                               |
+| gpu_id                      | 0                                                                                                               |
+| num_workers                 | 4                                                                                                               |
+| no_pin_memory               | False                                                                                                           |
+| lr                          | 0.0001                                                                                                          |
+| lr_drop                     | 3                                                                                                               |
+| wd                          | 0.0001                                                                                                          |
+| n_epoch                     | 5                                                                                                               |
+| max_es_cnt                  | 5                                                                                                               |
+| bsz                         | 32                                                                                                              |
+| eval_bsz                    | 100                                                                                                             |
+| grad_clip                   | 0.1                                                                                                             |
+| eval_untrained              | False                                                                                                           |
+| resume                      | results_internvideo2_quick/hl-video_tef-internvideo2_5epoch_20251211_130146-2025_12_11_13_01_50/model_best.ckpt |
+| resume_all                  | False                                                                                                           |
+| start_epoch                 |                                                                                                                 |
+| max_q_l                     | 32                                                                                                              |
+| max_v_l                     | 75                                                                                                              |
+| clip_length                 | 2                                                                                                               |
+| max_windows                 | 10                                                                                                              |
+| train_path                  | data/highlight_train_release.jsonl                                                                              |
+| eval_path                   | data/highlight_val_release.jsonl                                                                                |
+| no_norm_vfeat               | False                                                                                                           |
+| no_norm_tfeat               | False                                                                                                           |
+| v_feat_dirs                 | ['/home/cl/vscode/sdst_datasets/data/qvhighlights/vid_feats']                                                   |
+| t_feat_dir                  | /home/cl/vscode/sdst_datasets/data/qvhighlights/txt_feats                                                       |
+| a_feat_dir                  |                                                                                                                 |
+| v_feat_dim                  | 3840                                                                                                            |
+| t_feat_dim                  | 5120                                                                                                            |
+| a_feat_dim                  |                                                                                                                 |
+| ctx_mode                    | video_tef                                                                                                       |
+| position_embedding          | sine                                                                                                            |
+| enc_layers                  | 2                                                                                                               |
+| dec_layers                  | 4                                                                                                               |
+| dim_feedforward             | 1024                                                                                                            |
+| hidden_dim                  | 256                                                                                                             |
+| input_dropout               | 0.5                                                                                                             |
+| dropout                     | 0.1                                                                                                             |
+| txt_drop_ratio              | 0                                                                                                               |
+| use_txt_pos                 | False                                                                                                           |
+| nheads                      | 8                                                                                                               |
+| num_queries                 | 10                                                                                                              |
+| pre_norm                    | False                                                                                                           |
+| n_input_proj                | 2                                                                                                               |
+| contrastive_hdim            | 64                                                                                                              |
+| temperature                 | 0.07                                                                                                            |
+| lw_saliency                 | 1.0                                                                                                             |
+| saliency_margin             | 0.2                                                                                                             |
+| aux_loss                    | True                                                                                                            |
+| span_loss_type              | l1                                                                                                              |
+| contrastive_align_loss      | False                                                                                                           |
+| set_cost_span               | 10                                                                                                              |
+| set_cost_giou               | 1                                                                                                               |
+| set_cost_class              | 4                                                                                                               |
+| set_cost_mask               | 6                                                                                                               |
+| span_loss_coef              | 10                                                                                                              |
+| giou_loss_coef              | 1                                                                                                               |
+| label_loss_coef             | 4.0                                                                                                             |
+| eos_coef                    | 0.1                                                                                                             |
+| contrastive_align_loss_coef | 0.0                                                                                                             |
+| mask_loss_coef              | 6                                                                                                               |
+| iou_scores_loss_coef        | 2                                                                                                               |
+| no_sort_results             | False                                                                                                           |
+| max_before_nms              | 10                                                                                                              |
+| max_after_nms               | 10                                                                                                              |
+| conf_thd                    | 0.0                                                                                                             |
+| nms_thd                     | -1                                                                                                              |
+| VTC_loss_coef               | 0.3                                                                                                             |
+| CTC_loss_coef               | 0.5                                                                                                             |
+| eval_id                     |                                                                                                                 |
+| eval_results_dir            |                                                                                                                 |
+| model_dir                   | results_internvideo2_quick/hl-video_tef-internvideo2_5epoch_20251211_130146-2025_12_11_13_01_50                 |
+| results_dir                 | results_internvideo2_quick/hl-video_tef-internvideo2_5epoch_20251211_130146-2025_12_11_13_01_50                 |2025-12-11 13:07:24.560:INFO:sim_detr.inference - Setup config, data and model...
+2025-12-11 13:07:24.596:INFO:sim_detr.inference - setup model/optimizer/scheduler
+2025-12-11 13:07:24.820:INFO:sim_detr.inference - CUDA enabled.
+2025-12-11 13:07:24.845:INFO:sim_detr.inference - Load checkpoint from results_internvideo2_quick/hl-video_tef-internvideo2_5epoch_20251211_130146-2025_12_11_13_01_50/model_best.ckpt
+2025-12-11 13:07:25.024:INFO:sim_detr.inference - Loaded model saved at epoch 4 from checkpoint: results_internvideo2_quick/hl-video_tef-internvideo2_5epoch_20251211_130146-2025_12_11_13_01_50/model_best.ckpt
+2025-12-11 13:07:25.035:INFO:sim_detr.inference - Starting inference...
+2025-12-11 13:07:25.035:INFO:sim_detr.inference - Generate submissions
+val
+data/highlight_val_release.jsonl
+Only Video Evaluation
+compute st ed scores:   0%|          | 0/16 [00:00<?, ?it/s]
+Traceback (most recent call last):
+  File "/home/cl/vscode/rmodel/Sim-DETR/sim_detr/train.py", line 465, in <module>
+    start_inference(opt)
+  File "/home/cl/vscode/rmodel/Sim-DETR/sim_detr/inference.py", line 417, in start_inference
+    eval_epoch(model, eval_dataset, opt, save_submission_filename, criterion=criterion)
+  File "/home/cl/vscode/rmodel/Sim-DETR/sim_detr/inference.py", line 303, in eval_epoch
+    submission, eval_loss_meters = get_eval_res(model, eval_loader, opt, epoch_i, criterion, tb_writer)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/cl/vscode/rmodel/Sim-DETR/sim_detr/inference.py", line 258, in get_eval_res
+    eval_res, eval_loss_meters = compute_mr_results(model, eval_loader, opt, epoch_i, criterion, tb_writer)  # list(dict)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/cl/vscode/rmodel/Sim-DETR/simdetr_env/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 115, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/cl/vscode/rmodel/Sim-DETR/sim_detr/inference.py", line 186, in compute_mr_results
+    for batch in tqdm(eval_loader, desc="compute st ed scores"):
+  File "/home/cl/vscode/rmodel/Sim-DETR/simdetr_env/lib/python3.12/site-packages/tqdm/std.py", line 1181, in __iter__
+    for obj in iterable:
+  File "/home/cl/vscode/rmodel/Sim-DETR/simdetr_env/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 631, in __next__
+    data = self._next_data()
+           ^^^^^^^^^^^^^^^^^
+  File "/home/cl/vscode/rmodel/Sim-DETR/simdetr_env/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 1346, in _next_data
+    return self._process_data(data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/cl/vscode/rmodel/Sim-DETR/simdetr_env/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 1372, in _process_data
+    data.reraise()
+  File "/home/cl/vscode/rmodel/Sim-DETR/simdetr_env/lib/python3.12/site-packages/torch/_utils.py", line 722, in reraise
+    raise exception
+FileNotFoundError: Caught FileNotFoundError in DataLoader worker process 0.
+Original Traceback (most recent call last):
+  File "/home/cl/vscode/rmodel/Sim-DETR/simdetr_env/lib/python3.12/site-packages/torch/utils/data/_utils/worker.py", line 308, in _worker_loop
+    data = fetcher.fetch(index)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/cl/vscode/rmodel/Sim-DETR/simdetr_env/lib/python3.12/site-packages/torch/utils/data/_utils/fetch.py", line 51, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+            ~~~~~~~~~~~~^^^^^
+  File "/home/cl/vscode/rmodel/Sim-DETR/sim_detr/start_end_dataset.py", line 90, in __getitem__
+    model_inputs["query_feat"] = self._get_query_feat_by_qid(meta["qid"])  # (Dq, ) or (Lq, Dq)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/cl/vscode/rmodel/Sim-DETR/sim_detr/start_end_dataset.py", line 325, in _get_query_feat_by_qid
+    q_feat = np.load(q_feat_path).astype(np.float32)
+             ^^^^^^^^^^^^^^^^^^^^
+  File "/home/cl/vscode/rmodel/Sim-DETR/simdetr_env/lib/python3.12/site-packages/numpy/lib/npyio.py", line 427, in load
+    fid = stack.enter_context(open(os_fspath(file), "rb"))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/cl/vscode/sdst_datasets/data/qvhighlights/txt_feats/2579.npy'
