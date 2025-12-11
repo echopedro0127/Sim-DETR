@@ -132,8 +132,9 @@ class StartEndDatasetInternVideo2(Dataset):
         score_array = np.zeros(ctx_l)
         for idx in range(len(rel_clip_ids)):
             if rel_clip_ids[idx] >= ctx_l:
-                score_array_new = np.zeros(ctx_l + 1)
-                score_array_new[:ctx_l] = score_array
+                # Expand score_array to accommodate the larger index
+                score_array_new = np.zeros(rel_clip_ids[idx] + 1)
+                score_array_new[:len(score_array)] = score_array
                 score_array = score_array_new
             score_array[rel_clip_ids[idx]] = agg_scores[idx]
 
