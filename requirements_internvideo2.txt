@@ -1,0 +1,16 @@
+# Requirements for Sim-DETR with InternVideo2 features
+# Python 3.12+
+
+# Core dependencies
+torch==2.2.1
+torchvision==0.17.1
+numpy<2  # Must be <2.0 for compatibility with PyTorch 2.2.1
+tqdm>=4.67.0
+tensorboard>=2.20.0
+h5py>=3.15.0
+easydict>=1.13
+scipy>=1.16.0
+pandas>=2.3.0
+
+# Additional utilities
+setuptools>=80.0.0
