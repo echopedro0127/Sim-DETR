@@ -18,6 +18,9 @@ from sim_detr.start_end_dataset import \
     StartEndDataset, start_end_collate, prepare_batch_inputs
 from sim_detr.start_end_dataset_audio import \
     StartEndDataset_audio, start_end_collate_audio, prepare_batch_inputs_audio
+# Support for InternVideo2 features
+from sim_detr.start_end_dataset_internvideo2 import \
+    StartEndDatasetInternVideo2
 from sim_detr.inference import eval_epoch, start_inference, setup_model
 from utils.basic_utils import AverageMeter, dict_to_markdown
 from utils.model_utils import count_parameters
@@ -355,6 +358,14 @@ def train_hl(model, criterion, optimizer, lr_scheduler, train_dataset, val_datas
 
 def start_training(opt):
     logger.info("Setup config, data and model...")
+
+    # Check if using InternVideo2 features (detect by feature dimension or path)
+    use_internvideo2 = (opt.v_feat_dim == 3840 or opt.t_feat_dim == 5120 or
+                        any('internvideo' in str(d).lower() for d in opt.v_feat_dirs))
+
+    if use_internvideo2:
+        logger.info("Using InternVideo2 dataset loader")
+
     if opt.a_feat_dir is None:
         dataset_config = dict(
             dset_name=opt.dset_name,
@@ -375,7 +386,13 @@ def start_training(opt):
             dset_domain=opt.dset_domain,
         )
         dataset_config["data_path"] = opt.train_path
-        train_dataset = StartEndDataset(**dataset_config)
+
+        # Use InternVideo2 dataset if detected
+        if use_internvideo2:
+            dataset_config["use_internvideo2"] = True
+            train_dataset = StartEndDatasetInternVideo2(**dataset_config)
+        else:
+            train_dataset = StartEndDataset(**dataset_config)
     else:
         dataset_config = dict(
             dset_name=opt.dset_name,
@@ -407,7 +424,11 @@ def start_training(opt):
         dataset_config["q_feat_dir"] = opt.t_feat_dir.replace("sub_features", "text_features")  # for pretraining
         # dataset_config["load_labels"] = False  # uncomment to calculate eval loss
         if opt.a_feat_dir is None:
-            eval_dataset = StartEndDataset(**dataset_config)
+            # Use InternVideo2 dataset if detected
+            if use_internvideo2:
+                eval_dataset = StartEndDatasetInternVideo2(**dataset_config)
+            else:
+                eval_dataset = StartEndDataset(**dataset_config)
         else:
             eval_dataset = StartEndDataset_audio(**dataset_config)
     else:
